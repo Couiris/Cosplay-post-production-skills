@@ -1,0 +1,31 @@
+{
+  "id": "f_combo_blend-virtual-light",
+  "title": "参考光纹溶图与电影侧逆光",
+  "content": "{\"role_instruction\":\"你是一位资深 COS 照片后期与合成师，在底图上做局部多图溶图和可解释的虚拟打光。\",\"task_summary\":\"只把供体图的金色窗格光纹溶入底图背景墙，并新增同方向暖金侧逆光；底图人物、姿态、机位和其余场景保持。\",\"photo_readout\":{\"base\":\"input_1 是唯一构图与人物基准\",\"donor\":\"input_2 仅提供金色窗格光纹\",\"anchors\":\"执行时检测人物轮廓、背景墙平面、脸部识别区和原投影\",\"light\":\"执行时从底图判断原主光并记录置信度\"},\"executor_profile\":{\"target_family\":\"nano_banana_or_gemini_image_edit\",\"mask_support\":\"semantic\",\"multi_reference_support\":\"supported\",\"text_rendering\":\"disabled\",\"output_size\":\"match_input\",\"lock_reliability\":\"best_effort\"},\"execution_strategy\":\"ordered_micro_passes\",\"priority_order\":\"底图身份姿态机位 > 供体迁移白名单 > 溶图遮挡 > 原主光 > 虚拟灯 > 全局风格\",\"subject_lock_contract\":{\"goal\":\"底图人物身份、人数、姿态、手势、服装与坐标保持\",\"readonly\":[\"五官表情\",\"肢体角度\",\"服装结构\",\"人物位置\"],\"exceptions\":[\"人物朝向虚拟灯的发丝与肩线可接受克制暖金边光\"]},\"geometry_camera_lock_contract\":{\"goal\":\"底图画幅、机位、地平线、灭点、焦平面保持\",\"alignment\":\"供体光纹按背景墙平面透视变形\",\"transform\":\"不移动、缩放、旋转或裁切底图人物\"},\"background_lock_contract\":{\"goal\":\"只修改背景墙光纹区及对应受光区\",\"exceptions\":[\"供体光纹蒙版\",\"虚拟灯可达面与投影区\"],\"verification\":\"未授权背景保持可见一致\"},\"subject_light_profile\":{\"primary_light\":\"执行时从底图证据判断，保持原主光为基础\",\"existing_shadow\":\"原投影方向和软硬作为冲突检测基准\",\"new_emitter_role\":\"画外右后侧暖金窗光是次级造型光\",\"light_match_strength\":90},\"reference_roles\":[{\"index\":1,\"role\":\"base_identity_composition\",\"use\":\"人物、姿态、机位、画布和原场景基准\",\"do_not_transfer\":[]},{\"index\":2,\"role\":\"lighting_texture\",\"use\":\"只取金色窗格光纹的形状和色温\",\"do_not_transfer\":[\"供体人物\",\"供体背景\",\"供体文字与水印\"]}],\"pass_plan\":[{\"pass_id\":\"blend_addition_pass\",\"input_basis\":\"original_input\",\"modules\":[\"image_blend_plan\"],\"authorized_area\":\"背景墙光纹蒙版\",\"preserve\":[\"底图人物与其余背景\"],\"acceptance\":[\"无供体内容泄漏\",\"光纹透视贴墙\"]},{\"pass_id\":\"harmonize_lighting_pass\",\"input_basis\":\"previous_pass_output\",\"modules\":[\"virtual_lighting_plan\"],\"authorized_area\":\"人物右后侧轮廓、背景墙光纹区和相应投影区\",\"preserve\":[\"底图身份姿态与原主光\"],\"acceptance\":[\"人物与墙面同一光路\",\"无矛盾鼻影和投影\"]}],\"image_blend_plan\":{\"goal\":\"把供体窗格光纹局部溶入底图背景墙\",\"authorized_area\":\"人物右后方背景墙，不进入人物轮廓\",\"preserve\":[\"底图人物\",\"底图墙面材质\",\"底图机位\",\"供体以外所有内容\"],\"change\":{\"base_image\":\"input_1\",\"donor_images\":[{\"ref\":\"input_2\",\"transfer_only\":[\"金色窗格光纹\"],\"do_not_transfer\":[\"人物\",\"背景物体\",\"文字\",\"水印\"]}],\"alignment\":\"按底图墙面四边与灭点进行平面透视对齐\",\"blend_method\":\"screen_lighten\",\"opacity_or_strength\":55,\"transition_zone\":\"光纹边缘 3–5px 观感羽化并按墙面粗糙度破碎\",\"color_harmonization\":\"供体金色向底图白平衡匹配，底图肤色不反向偏移\",\"depth_and_occlusion\":\"光纹位于墙面层并被人物完整遮挡\",\"seam_healing\":\"清除供体矩形边界、双边、色边和重复纹理\"},\"integrate\":{\"perspective\":\"光纹随墙面透视和折角变化\",\"occlusion\":\"人物在光纹前\",\"lighting\":\"先只溶入光纹，人物受光留给后续虚拟灯\",\"depth_and_grain\":\"匹配墙面锐度和噪点\"},\"acceptance\":[\"只出现供体光纹且无供体人物背景泄漏\",\"墙面纹理透出且无矩形接缝\"]},\"virtual_lighting_plan\":{\"goal\":\"新增与窗格光纹同方向的暖金侧逆光\",\"authorized_area\":\"人物右后侧可达轮廓、墙面光纹和对应投影区\",\"preserve\":[\"原主光方向\",\"人物肤色中部\",\"原暗部层次\",\"未受光区域\"],\"change\":{\"lighting_goal\":\"克制电影侧逆光，解释墙面窗格光纹\",\"preserve_base_exposure\":true,\"lights\":[{\"light_id\":\"rim_1\",\"role\":\"rim\",\"motivation\":\"画外右后侧窗光，与墙面窗格光纹同源\",\"source_position\":\"相机右后方、人物肩部以上\",\"direction_and_elevation\":\"从右后上方向左前下方\",\"color\":\"暖金约夕阳观感\",\"hardness\":\"semi_soft\",\"spread\":\"窄侧逆光，边缘自然衰减\",\"intensity\":50,\"distance_falloff\":\"从右侧轮廓向人物中部快速衰减\",\"affected_surfaces\":[\"右侧发丝\",\"右肩\",\"披风外沿\",\"背景墙\"],\"shadow_behavior\":\"不新增第二个明显地面主影，只强化与窗光一致的局部投影\",\"exclude\":[\"面部正中\",\"左侧暗面\",\"未授权背景\"]}]},\"integrate\":{\"perspective\":\"投影沿墙面几何\",\"occlusion\":\"光被人物和实体遮挡\",\"lighting\":\"原主光保持主导，暖金仅作次级造型光\",\"depth_and_grain\":\"受光边缘保留原发丝和颗粒\"},\"acceptance\":[\"墙面光纹与人物边光方向一致\",\"无第二鼻影、全身染金或轮廓描边\"]},\"authorization_contract\":{\"per_module\":{\"image_blend_plan\":\"背景墙光纹蒙版\",\"virtual_lighting_plan\":\"右后侧可达面和投影区\"},\"authorized_change_mask\":\"两模块授权区并集\",\"unchanged_region_mask\":\"并集之外为只读目标\",\"mask_enforcement\":\"semantic_mask\",\"lock_reliability\":\"best_effort\",\"face_clean_zone\":\"面部正中不被光纹或强染光覆盖\"},\"integration\":{\"light_match\":\"溶入光纹与虚拟灯共享来源方向和色温\",\"perspective_match\":\"供体光纹贴合底图墙面\",\"texture_match\":\"墙面材质透出\",\"noise_match\":\"供体和受光区匹配底图颗粒\",\"depth_match\":{\"strength\":60,\"rule\":\"光纹位于背景墙深度\"},\"blend_strength\":60},\"acceptance_tests\":[\"底图人物身份姿态坐标保持\",\"供体只迁移白名单光纹\",\"虚拟灯来源方向投影一致\",\"无硬切接缝和全图染色\"],\"retry_policy\":{\"max_variants\":3,\"rule\":\"溶图失败只重试供体蒙版；打光失败只重试对应灯的可达面与投影区\"},\"constraints\":{\"must_not\":[\"供体人物背景文字泄漏\",\"底图人物漂移\",\"光纹穿过人物\",\"矛盾鼻影或地面投影\",\"全身暖金染色\"]},\"negative_prompt\":\"供体泄漏,双边鬼影,硬切蒙版,矩形接缝,透视错误,人物漂移,矛盾投影,无来源打光,全身染色,轮廓描边\"}",
+  "params": [
+    {
+      "key": "blend_opacity",
+      "label": "溶图强度",
+      "type": "number",
+      "min": 0,
+      "max": 100,
+      "default": 55,
+      "step": 5,
+      "target": "image_blend_plan.change.opacity_or_strength"
+    },
+    {
+      "key": "virtual_light_intensity",
+      "label": "虚拟灯强度",
+      "type": "number",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "step": 5,
+      "target": "virtual_lighting_plan.change.lights[].intensity"
+    }
+  ],
+  "category": "combo",
+  "subCategory": "溶图与虚拟打光",
+  "refImages": ["input_2"],
+  "_isFactory": true
+}

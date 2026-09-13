@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "defaults": { "light_match_strength": 90, "subject_core_locked": true },
+  "cases": [
+    { "id": "soft_window", "evidence": ["单侧宽眼神光", "柔鼻影", "宽高光"], "expected_source": "柔窗光", "expected_confidence": "medium_or_high", "must_check": ["窗位与受光侧一致", "宽羽化影"] },
+    { "id": "hard_sun", "evidence": ["清晰鼻影", "近平行落地影", "小亮高光"], "expected_source": "硬日光", "expected_confidence": "high", "must_check": ["单一太阳", "硬影方向一致"] },
+    { "id": "venue_top", "evidence": ["头肩顶部高光", "眼窝偏暗", "可见顶灯", "地面短影"], "expected_source": "会场顶光", "expected_confidence": "high", "must_check": ["保留灯具与实际照明一致", "新增灯不冲突"] },
+    { "id": "dual_stage", "evidence": ["两侧不同颜色轮廓", "多个眼神光", "舞台雾"], "expected_source": "舞台多灯", "expected_confidence": "medium_or_high", "must_check": ["多重淡影", "光束遇遮挡终止"] },
+    { "id": "neon_night", "evidence": ["青洋红两侧反光", "湿地彩色倒影"], "expected_source": "霓虹双色", "expected_confidence": "medium", "must_check": ["灯牌方向对应", "近光快速衰减"] },
+    { "id": "fire_or_magic", "evidence": ["用户明确强自发光", "近处同色局部高光"], "expected_source": "烛火/火焰或魔法自发光", "expected_confidence": "medium", "must_check": ["只影响可达表面", "有局部溢色与对应投影", "人物核心锁定"] },
+    { "id": "low_information", "evidence": ["无可靠眼神光", "无可见投影", "高光被压缩"], "expected_source": "保守画外环境光", "expected_confidence": "low", "must_check": ["输出方向范围", "不编造精确灯位", "不新增戏剧性轮廓光"] }
+  ],
+  "semi_composite_assertions": ["retained_original_scene.lights 是最高优先级证据", "清理摄影灯具后保留等效画外光源逻辑", "阶段1与阶段2的subject_light_profile规范化JSON完全相同", "阶段1与阶段2的environment_light_plan规范化JSON完全相同", "阶段1与阶段2的light_match_strength完全相同", "阶段1导出独立人物影子层", "阶段2清除人物及人物影子且subject_count为0"],
+  "large_composite_assertions": ["阶段1与阶段2的subject_light_profile规范化JSON完全相同", "阶段1与阶段2的environment_light_plan规范化JSON完全相同", "阶段1与阶段2的light_match_strength完全相同"],
+  "strong_emission_assertions": ["subject_core的身份、结构和纹理锁定", "存在vfx_relight_mask且只覆盖物理可达局部", "occluded_surfaces不受光", "存在距离衰减、局部染色与对应投影"],
+  "anti_sticker_assertions": ["特效拆分near/subject-plane/far", "锐度和透明度不统一", "存在真实遮挡与边缘衰减", "存在接触或起源逻辑", "景深、运动模糊和颗粒匹配同深度原片"]
+}

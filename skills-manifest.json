@@ -1,0 +1,23 @@
+{
+  "package": "cos-composite-prompt-skills",
+  "author": "Couiris",
+  "license": "MIT",
+  "release_date": "2026-09-13",
+  "skills": [
+    {
+      "name": "cos-basic-vfx-prompt",
+      "path": "skills/cos-basic-vfx-prompt",
+      "scope": "保留大部分原图的基础后期、局部 VFX、质感、打光与溶图"
+    },
+    {
+      "name": "cos-semi-composite-prompt",
+      "path": "skills/cos-semi-composite-prompt",
+      "scope": "保留场馆骨架与原机位的半合成"
+    },
+    {
+      "name": "cos-large-composite-prompt",
+      "path": "skills/cos-large-composite-prompt",
+      "scope": "完全换景与海报级世界重构的大合成"
+    }
+  ]
+}

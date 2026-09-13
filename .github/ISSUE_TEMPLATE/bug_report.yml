@@ -1,0 +1,42 @@
+name: Bug report
+description: 报告 skill 路由、提示词结构、JSON 或校验问题
+title: "[Bug]: "
+labels: []
+body:
+  - type: dropdown
+    id: skill
+    attributes:
+      label: 受影响的 skill
+      options:
+        - cos-basic-vfx-prompt
+        - cos-semi-composite-prompt
+        - cos-large-composite-prompt
+        - 仓库工具或文档
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 请说明实际行为和期望行为，不要粘贴密钥或私人图片。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      placeholder: 输入意图、启用模块、执行器以及最小复现步骤
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: 校验输出
+      description: 请附上相关校验器输出，并先移除敏感路径和数据。
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我已移除密钥、令牌、私人图片和其他敏感信息
+          required: true

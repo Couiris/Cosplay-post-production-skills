@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "light_match_strength": 90,
+    "subject_core_locked": true
+  },
+  "cases": [
+    {
+      "id": "soft_window",
+      "evidence": [
+        "单侧宽眼神光",
+        "柔鼻影",
+        "宽高光"
+      ],
+      "expected_source": "柔窗光",
+      "expected_confidence": "medium_or_high",
+      "must_check": [
+        "窗位与受光侧一致",
+        "宽羽化影"
+      ]
+    },
+    {
+      "id": "hard_sun",
+      "evidence": [
+        "清晰鼻影",
+        "近平行落地影",
+        "小亮高光"
+      ],
+      "expected_source": "硬日光",
+      "expected_confidence": "high",
+      "must_check": [
+        "单一太阳",
+        "硬影方向一致"
+      ]
+    },
+    {
+      "id": "venue_top",
+      "evidence": [
+        "头肩顶部高光",
+        "眼窝偏暗",
+        "可见顶灯",
+        "地面短影"
+      ],
+      "expected_source": "会场顶光",
+      "expected_confidence": "high",
+      "must_check": [
+        "保留灯具与实际照明一致",
+        "新增灯不冲突"
+      ]
+    },
+    {
+      "id": "dual_stage",
+      "evidence": [
+        "两侧不同颜色轮廓",
+        "多个眼神光",
+        "舞台雾"
+      ],
+      "expected_source": "舞台多灯",
+      "expected_confidence": "medium_or_high",
+      "must_check": [
+        "多重淡影",
+        "光束遇遮挡终止"
+      ]
+    },
+    {
+      "id": "neon_night",
+      "evidence": [
+        "青洋红两侧反光",
+        "湿地彩色倒影"
+      ],
+      "expected_source": "霓虹双色",
+      "expected_confidence": "medium",
+      "must_check": [
+        "灯牌方向对应",
+        "近光快速衰减"
+      ]
+    },
+    {
+      "id": "fire_or_magic",
+      "evidence": [
+        "用户明确强自发光",
+        "近处同色局部高光"
+      ],
+      "expected_source": "烛火/火焰或魔法自发光",
+      "expected_confidence": "medium",
+      "must_check": [
+        "只影响可达表面",
+        "有局部溢色与对应投影",
+        "人物核心锁定"
+      ]
+    },
+    {
+      "id": "low_information",
+      "evidence": [
+        "无可靠眼神光",
+        "无可见投影",
+        "高光被压缩"
+      ],
+      "expected_source": "保守画外环境光",
+      "expected_confidence": "low",
+      "must_check": [
+        "输出方向范围",
+        "不编造精确灯位",
+        "不新增戏剧性轮廓光"
+      ]
+    }
+  ],
+  "semi_composite_assertions": [
+    "retained_original_scene.lights 是最高优先级证据",
+    "清理摄影灯具后保留等效画外光源逻辑"
+  ],
+  "large_composite_assertions": [
+    "阶段1与阶段2的subject_light_profile、environment_light_plan和light_match_strength完全相同",
+    "阶段1必须拆成背景板、独立影子层和宿主人物回贴，模型不得输出人物成片",
+    "阶段1的subject_count等于输入实际人数且宿主回贴后人物RGBA、bbox、质心、脚点、尺寸、姿态和变换与原始抠图完全相同",
+    "阶段1完成场景骨架与五层第一批基础素材，不提前堆满最终特效",
+    "阶段1包含正确接触影、环境遮蔽和投射影",
+    "阶段1输出base_frame_manifest、subject_lock_contract、stage1_execution_contract、画布同尺寸locked_shadow_mask、shadow_reference_pixels、三个影子分区和透明独立影子层",
+    "阶段2缺少base_frame_manifest或shadow_lock_package时停止",
+    "阶段2禁止全画幅生成式成片，只允许补洞patch和透明RGBA叠加层",
+    "阶段2的subject_removal_mask等于cleaned_subject_alpha AND NOT locked_shadow_mask",
+    "authorized_change_mask等于(subject_removal_mask OR asset_addition_mask OR material_refinement_mask OR background_vfx_mask) AND NOT locked_shadow_mask",
+    "所有补丁和叠加层在各自授权遮罩外alpha为0",
+    "阶段2由宿主从copy(stage1_output)开始确定性合成且不做缩放旋转平移或自动对齐",
+    "阶段2先局部去人补景，再增加第二批素材，再细化全部素材，最后添加背景特效",
+    "stage2_asset_expansion不进入人物alpha、识别净区或影子锁区且不移动阶段1主资产",
+    "阶段2的subject_count为0且背景连续",
+    "unchanged_region_mask与阶段1的RGBA差分为零",
+    "宿主不支持透明补丁/叠加层、确定性合成或硬锁时停止",
+    "阶段2输出无人物本体、边缘、倒影、残影或人形负空间",
+    "background_refinement与background_vfx均不改变授权遮罩外几何、灯位、景深、底色和像素",
+    "前压人物的特效只记入deferred_foreground_vfx",
+    "阶段1先锁定原片拍摄角度：机位高度、pitch、yaw、roll、地平线、视线高度、脚点透视、两组环境直线和身体透视缩短通过后才生成背景",
+    "阶段1模型不得输出人物像素，宿主回贴后人物RGBA、bbox、质心、脚点、尺寸、姿态与原始抠图完全相同",
+    "阶段2的shadow_removal_mask直接读取阶段1 locked_shadow_mask，影子区允许被背景补全且不得残留人物影子",
+    "阶段2不回写shadow_reference_pixels；阶段1独立影子层由用户后期按需擦回"
+  ],
+  "strong_emission_assertions": [
+    "subject_core的身份、结构和纹理锁定",
+    "存在vfx_relight_mask且只覆盖物理可达局部",
+    "occluded_surfaces不受光",
+    "存在距离衰减、局部染色与对应投影"
+  ],
+  "anti_sticker_assertions": [
+    "特效拆分near/subject-plane/far",
+    "锐度和透明度不统一",
+    "存在真实遮挡与边缘衰减",
+    "存在接触或起源逻辑",
+    "景深、运动模糊和颗粒匹配同深度原片"
+  ]
+}
+

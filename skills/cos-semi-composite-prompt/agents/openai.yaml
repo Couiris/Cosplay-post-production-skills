@@ -1,0 +1,6 @@
+interface:
+  display_name: "COS半合成提示词"
+  short_description: "按原片镜头生成保留场馆结构的两阶段半合成预设"
+  default_prompt: "使用 $cos-semi-composite-prompt 为这张 COS 场照生成两份按顺序执行、保留人物和场馆结构的半合成 JSON 预设。"
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,35 @@
+name: Feature request
+description: 建议新的模块、效果、场景、Schema 或校验规则
+title: "[Feature]: "
+labels: []
+body:
+  - type: dropdown
+    id: skill
+    attributes:
+      label: 目标 skill
+      options:
+        - cos-basic-vfx-prompt
+        - cos-semi-composite-prompt
+        - cos-large-composite-prompt
+        - 三者共享
+    validations:
+      required: true
+  - type: textarea
+    id: use_case
+    attributes:
+      label: 使用场景
+      description: 描述真实需求、现有能力为何不足以及预期结果。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 可补充字段、授权区域、融入规则、验收方式和失败边界。
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 范围确认
+      options:
+        - label: 该需求与 COS 图像后期或合成提示词直接相关
+          required: true

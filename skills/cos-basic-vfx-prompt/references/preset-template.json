@@ -1,0 +1,31 @@
+{
+  "id": "f_vfx_gold-magic-circle",
+  "title": "脚下金色法阵",
+  "content": "{\"role_instruction\":\"你是一位资深 COS 照片后期师，在输入照片上做局部增量编辑。\",\"task_summary\":\"只在人物脚下加入暖金法阵，保持人物身份、姿态、坐标、服装和原场景。\",\"photo_readout\":{\"subject_count\":\"执行时确认\",\"anchors\":\"检测双脚落点、肩宽、人物轮廓和脸部识别区\",\"camera\":\"从地面线与景深估计透视，未知项服从原图\",\"light\":\"从眼神光、鼻影、下颌影、投影和可见灯源判断\"},\"executor_profile\":{\"target_family\":\"nano_banana_or_gemini_image_edit\",\"mask_support\":\"semantic\",\"multi_reference_support\":\"unknown\",\"text_rendering\":\"disabled\",\"output_size\":\"match_input\",\"lock_reliability\":\"best_effort\"},\"execution_strategy\":\"single_pass\",\"priority_order\":\"用户要求 > 身份安全 > 姿态坐标 > 相机几何 > 原背景 > VFX\",\"subject_lock_contract\":{\"goal\":\"同一人物、同一人数、同一脸、同一姿态和坐标\",\"readonly\":[\"五官表情\",\"发型发色\",\"服装配饰\",\"肢体手势\"],\"exceptions\":[\"法阵近邻可达面的克制暖金反光\"]},\"geometry_camera_lock_contract\":{\"goal\":\"画幅、机位、地平线、灭点、焦段观感和焦平面匹配输入\",\"ground_plane\":\"法阵沿原地面单应性形变\",\"transform\":\"不裁切、不缩放、不旋转、不移动人物\"},\"background_lock_contract\":{\"goal\":\"除法阵及其局部反光外原背景保持可见一致\",\"exceptions\":[\"法阵授权区\",\"局部反光区\"],\"verification\":\"显式蒙版时检查差分；语义蒙版时为 best_effort\"},\"subject_light_profile\":{\"primary_light\":\"执行时从输入图判断，原主光保持主导\",\"existing_shadow\":\"保留原投影方向与软硬\",\"new_emitter_role\":\"法阵是次级暖金光源\",\"light_match_strength\":90},\"vfx_plan\":{\"goal\":\"生成贴合地面的暖金法阵\",\"authorized_area\":\"双脚中点周围约 0.9 个肩宽的地面椭圆区和局部反光区\",\"preserve\":[\"人物五官姿态\",\"脚点接触影\",\"原地面纹理\",\"原主光方向\"],\"change\":{\"strength\":60,\"time_phase\":\"符文刚被点亮的单一瞬间\"},\"integrate\":{\"perspective\":\"随地面透视形变\",\"occlusion\":\"人物与鞋遮挡其后的线条\",\"lighting\":\"只照亮裙摆下沿、小腿朝地面和邻近地面\",\"depth_and_grain\":\"远端变软，颗粒匹配同深度原图\"},\"acceptance\":[\"法阵不是正圆贴纸且透视正确\",\"失败只重试脚下授权区\"],\"render_style\":\"写实电影 VFX，细线能量与克制体积光\",\"particle_density\":20,\"effects\":[{\"effect_id\":\"vfx_1\",\"type\":\"魔法阵\",\"variant\":\"暖金双层几何法阵\",\"source_and_cause\":\"由人物双脚落点与角色能量激活\",\"vfx_zone\":\"人物脚下地面\",\"authorized_area\":\"以双脚中点为中心、约 0.9 个肩宽的地面椭圆区\",\"anchor\":\"双脚中点和原地面平面\",\"depth_order\":\"behind_subject\",\"visual_description\":\"双层同心几何与抽象符纹沿线点亮，线芯亮白向暖金衰减，透出原地面纹理\",\"material_emission\":{\"emissive\":true,\"color\":\"暖金\",\"strength\":55,\"layers\":[\"亮白线芯\",\"暖金能量面\",\"轻体积辉光\"]},\"dynamics\":{\"time_phase\":\"刚点亮\",\"motion\":\"内外环反向缓慢旋转的定格瞬间\"},\"environment_interaction\":{\"ground\":\"透出原纹理并产生局部暖金反射\",\"contact\":\"保留双脚接触影\"},\"camera_response\":{\"depth\":\"远端随原景深变软\",\"grain\":\"匹配同深度噪点\",\"highlight_rolloff\":\"保留亮线层次不过曝\"},\"intensity\":60,\"relight_and_blend\":{\"surfaces\":[\"裙摆下沿\",\"小腿朝地面\",\"邻近地面\"],\"rule\":\"暖金反光随距离快速衰减\"},\"anti_sticker\":[\"沿地面透视形变\",\"被双脚和人物遮挡\",\"边缘自然衰减\",\"保留原地面纹理\"],\"acceptance\":[\"线条遮挡和地面透视正确\",\"局部染光方向与强度合理\"],\"vfx_relight_mask\":{\"reachable_surfaces\":[\"裙摆下沿\",\"小腿朝地面\",\"邻近地面\"],\"tint\":\"暖金\",\"max_luminance_delta\":15,\"falloff\":\"离法阵边缘快速衰减\",\"occlusion_stop\":\"被身体、服装和实物遮挡即终止\"}}]},\"authorization_contract\":{\"per_module\":{\"vfx_plan\":\"脚下地面椭圆区和局部可达面反光\"},\"authorized_change_mask\":\"vfx_plan 授权区并集\",\"unchanged_region_mask\":\"授权并集之外为只读目标\",\"mask_enforcement\":\"semantic_mask\",\"lock_reliability\":\"best_effort\",\"face_clean_zone\":\"面部识别区完全排除\"},\"integration\":{\"light_match\":\"原主光保持主导\",\"perspective_match\":\"复用原地面平面\",\"texture_match\":\"透出地面纹理\",\"noise_match\":\"匹配同深度颗粒\",\"depth_match\":{\"strength\":60,\"rule\":\"远端按原景深渐变\"},\"blend_strength\":60},\"acceptance_tests\":[\"人物身份、人数、姿态和坐标与输入一致\",\"法阵透视、遮挡与反光正确\",\"未授权背景无可见重绘\"],\"retry_policy\":{\"max_variants\":3,\"rule\":\"只重试失败效果的最小授权区\"},\"constraints\":{\"must_not\":[\"改变五官身份与姿态\",\"新增人物或肢体\",\"法阵穿过鞋和人体\",\"无来源全身染金\",\"生成乱码符文\"]},\"negative_prompt\":\"身份漂移,额外人物,多余肢体,平面贴纸法阵,透视错误,遮挡错误,全身染金,乱码文字,水印\"}",
+  "params": [
+    {
+      "key": "vfx_intensity",
+      "label": "特效强度",
+      "type": "number",
+      "min": 0,
+      "max": 100,
+      "default": 60,
+      "step": 5,
+      "target": "vfx_plan.effects[].intensity"
+    },
+    {
+      "key": "emission_strength",
+      "label": "发光强度",
+      "type": "number",
+      "min": 0,
+      "max": 100,
+      "default": 55,
+      "step": 5,
+      "target": "vfx_plan.effects[].material_emission.strength"
+    }
+  ],
+  "category": "vfx",
+  "subCategory": "法阵",
+  "refImages": [],
+  "_isFactory": true
+}
