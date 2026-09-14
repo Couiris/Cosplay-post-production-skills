@@ -12,6 +12,6 @@
   ],
   "semi_composite_assertions": ["retained_original_scene.lights 是最高优先级证据", "清理摄影灯具后保留等效画外光源逻辑", "阶段1与阶段2的subject_light_profile规范化JSON完全相同", "阶段1与阶段2的environment_light_plan规范化JSON完全相同", "阶段1与阶段2的light_match_strength完全相同", "阶段1导出独立人物影子层", "阶段2清除人物及人物影子且subject_count为0"],
   "large_composite_assertions": ["阶段1与阶段2的subject_light_profile规范化JSON完全相同", "阶段1与阶段2的environment_light_plan规范化JSON完全相同", "阶段1与阶段2的light_match_strength完全相同"],
-  "strong_emission_assertions": ["subject_core的身份、结构和纹理锁定", "存在vfx_relight_mask且只覆盖物理可达局部", "occluded_surfaces不受光", "存在距离衰减、局部染色与对应投影"],
+  "strong_emission_assertions": ["原始人物源层RGBA和alpha零差异", "存在vfx_relight_mask且只覆盖物理可达局部", "subject_relight_overlay_rgba进入final_assembly_manifest", "occluded_surfaces不受光", "存在距离衰减、局部染色与对应投影"],
   "anti_sticker_assertions": ["特效拆分near/subject-plane/far", "锐度和透明度不统一", "存在真实遮挡与边缘衰减", "存在接触或起源逻辑", "景深、运动模糊和颗粒匹配同深度原片"]
 }

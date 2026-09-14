@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -15,12 +16,57 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8")
     root = Path(__file__).resolve().parents[1]
     errors: list[str] = []
+    eval_case_count = 0
 
     skill_text = (root / "SKILL.md").read_text(encoding="utf-8")
     if not re.match(r"^---\n.*?\n---\n", skill_text, re.DOTALL):
         errors.append("SKILL.md frontmatter format invalid")
     if re.search(r"(?m)^\s*\[TODO:", skill_text):
         errors.append("SKILL.md contains unfinished TODO")
+    for required_link in (
+        "references/request-routing-qc.md",
+        "references/effect-prompt-compiler.md",
+        "references/output-schema.md",
+    ):
+        if required_link not in skill_text:
+            errors.append(f"SKILL.md does not link required resource: {required_link}")
+
+    routing_text = (root / "references" / "request-routing-qc.md").read_text(encoding="utf-8")
+    for required_term in ("intent_card", "checkpointed_multi_turn", "五道质量门", "排他判定"):
+        if required_term not in routing_text:
+            errors.append(f"request-routing-qc.md missing: {required_term}")
+
+    compiler_text = (root / "references" / "effect-prompt-compiler.md").read_text(encoding="utf-8")
+    for required_term in (
+        "composition_role", "density_budget", "hierarchy_weight", "global_moment",
+        "palette_relationship", "shared_environment_response",
+    ):
+        if required_term not in compiler_text:
+            errors.append(f"effect-prompt-compiler.md missing: {required_term}")
+
+    if not (root / "scripts" / "test_validator.py").is_file():
+        errors.append("scripts/test_validator.py is missing")
+
+    eval_path = root / "evals" / "forward-cases.json"
+    if not eval_path.is_file():
+        errors.append("evals/forward-cases.json is missing")
+    else:
+        try:
+            eval_data = json.loads(eval_path.read_text(encoding="utf-8"))
+            cases = eval_data.get("cases", [])
+            if not isinstance(cases, list) or len(cases) < 3:
+                errors.append("forward eval suite must contain at least 3 cases")
+            else:
+                eval_case_count = len(cases)
+                for case in cases:
+                    declared = set(case.get("expected_modules", [])) | set(
+                        case.get("conditional_modules", [])
+                    ) | set(case.get("forbidden_auto_modules", []))
+                    unknown = sorted(declared - MODULES)
+                    if unknown:
+                        errors.append(f"forward eval {case.get('id')} has unknown modules: {unknown}")
+        except (OSError, json.JSONDecodeError) as exc:
+            errors.append(f"forward eval suite invalid: {exc}")
 
     registry_text = (root / "references" / "module-registry.md").read_text(encoding="utf-8")
     registry_modules = set(re.findall(r"^\| `([a-z0-9_]+)` \|", registry_text, re.MULTILINE))
@@ -68,7 +114,7 @@ def main() -> int:
 
     print(
         f"审计通过：{len(registry_modules)} 个模块，{len(effect_numbers)} 项特效，"
-        f"{len(templates)} 个模板，文档链接有效"
+        f"{len(templates)} 个模板，{eval_case_count} 个前向评估场景，文档链接有效"
     )
     return 0
 

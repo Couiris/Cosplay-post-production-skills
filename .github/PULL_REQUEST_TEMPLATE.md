@@ -13,7 +13,7 @@
 ## 验证
 
 - [ ] 已运行 `python scripts/validate_skills.py`
-- [ ] 修改基础后期时，已运行 `scripts/audit_skill.py`
+- [ ] 修改任一 skill 时，已运行其 `scripts/audit_skill.py` 与 `scripts/test_validator.py`
 - [ ] 新增或修改 JSON 时，已通过对应校验
 - [ ] 未提交缓存、密钥、私人图片或未授权素材
 

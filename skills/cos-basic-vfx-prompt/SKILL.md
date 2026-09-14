@@ -1,7 +1,7 @@
 ---
 name: cos-basic-vfx-prompt
 description: >
-  为 COS 场照与正片生成可导入 Nano Banana / Gemini 图像编辑插件的单预设 JSON，适用于保留原人物与大部分原场景的局部特效、清理救片、人像服装精修、道具增材、虚拟打光、多图溶图、光影调色、扩图及成片包装。用户提出加法阵火焰雷电翅膀、清路人反光、修清晰修脸修假发服装、融合参考图、重新打光、换天扩图、海报与风格化等增量后期时使用；若核心任务是重建大面积场景或彻底换世界，改用半合成或大合成 skill。
+  为 COS 场照与正片生成可导入 Nano Banana / Gemini 图像编辑插件的可验证单预设 JSON。用于保留原人物与大部分原场景的局部修复、人像服装精修、分材质质感、道具增材、VFX、虚拟打光、多图溶图、调色、有限扩边和成片包装；若新增场景成为主体、需要重摆人物或彻底换世界，改用半合成或大合成 skill。
 metadata:
   short-description: COS 增量后期与 VFX 的可验证 JSON 预设
 ---
@@ -27,6 +27,7 @@ metadata:
 - 去安全裤/打底裤穿帮只用裙摆、外层服装、阴影或同类丝袜继续覆盖；不减少身体覆盖、不生成裸露。
 - 去水印只处理用户自有或获授权图片。不要协助移除来源标识以冒充权属。
 - 不凭服装猜测不确定的官方设定、纹章或文字。低置信度时使用抽象几何、角色现有配色和中性母题，并写明推断。
+- 用户明确给出的改动、保留项与交付格式优先于本 skill 的默认值；默认值只能填补不影响核心结果的空白，不能覆盖用户选择。
 
 ## 必读与按需资源
 
@@ -35,6 +36,7 @@ metadata:
 1. 读 [提示词架构](references/prompt-architecture.md)，采用目标—保留—修改—融入—验收结构。
 2. 读 [锁定合同](references/lock-contracts.md) 和 [输出格式](references/output-schema.md)。
 3. 读 [模块注册表](references/module-registry.md)，只使用规范键名；旧键名仅作为输入别名。
+4. 读 [请求路由与质量门](references/request-routing-qc.md)，先生成意图卡，再决定模块、顺序和执行策略。
 
 按请求再读：
 
@@ -49,7 +51,7 @@ metadata:
 
 ### 1. 读图与记录不确定性
 
-若有照片，先写 `photo_readout`：真实人数、主体框、脸/手/脚点、可用负空间、遮挡、画布比例、透视线、焦平面、噪点/压缩、主光方向/软硬/冷暖及证据。看不清就写 `unknown` 或范围与置信度；不编造 EXIF、角色名或不可见材质。
+先写 `intent_card`：用户明确要改什么、必须保留什么、禁止改变什么、参考图各自职责、交付形式，以及哪些信息仍不确定。再写 `photo_readout`：真实人数、主体框、脸/手/脚点、可用负空间、遮挡、画布比例、透视线、焦平面、噪点/压缩、主光方向/软硬/冷暖及证据。看不清就写 `unknown` 或范围与置信度；不编造 EXIF、角色名或不可见材质。
 
 若用户没给图，也要生成可导入预设，但将依赖图像判断的值写成“执行时从输入图检测”，不要假造坐标。
 
@@ -60,6 +62,8 @@ metadata:
 - `target_family`: `nano_banana_or_gemini_image_edit`
 - `mask_support`: `explicit | semantic | unknown`
 - `multi_reference_support`: 用户或插件已说明时填写，否则 `unknown`；启用 `image_blend_plan` 时还要写每张供体图职责
+- `multi_turn_support`: `true | false | unknown`；只有确认支持连续编辑与检查点时才使用 `checkpointed_multi_turn`
+- `layer_or_patch_output`: `true | false | unknown`；只有为 true 时才把透明补丁/图层作为强锁定路径
 - `text_rendering`: `supported | unknown | disabled`
 - `output_size`: 用户明确时写 1K/2K/4K 或尺寸，否则 `match_input`
 - `lock_reliability`: 有显式蒙版与底图回贴时 `strong`，只有自然语言语义蒙版时 `best_effort`
@@ -76,7 +80,7 @@ metadata:
 - 2 分：自发光特效、手/假发修复、服装结构修复、虚拟灯、局部溶图、换天、背景虚化、调色。
 - 3 分：脸型/身形、分身/悬浮、多供体复杂溶图、明显风格化、扩图、精确文字、多主体交互。
 
-总分不超过 6 且模块互不冲突，可 `single_pass`。超过 6、同时改身份邻域与全局风格、或包含多个高风险项时，仍输出一份预设，但 `execution_strategy` 设为 `ordered_micro_passes`，在 `pass_plan` 中依次写清修复、增材/VFX、全局成片；每一步都以前一步结果为输入并重新锁定未授权区域。
+总分不超过 6 且模块互不冲突，可 `single_pass`。超过 6、同时改身份邻域与全局风格、或包含多个高风险项时，使用 `ordered_micro_passes`。执行器明确支持连续编辑与检查点时，可改用 `checkpointed_multi_turn`，每一轮只在上一轮通过验收后继续；否则仍输出一份预设并把 `pass_plan` 当作同次推理内的有序步骤。每一步都以前一步结果为输入并重新锁定未授权区域。
 
 ### 4. 先解决冲突再写提示词
 
@@ -106,6 +110,7 @@ metadata:
 - 默认 1 个主效果 + 1 个环境响应 + 1 个空气层；发光主色不超过 3 种，除非用户明确要多彩风格。
 - 新增虚拟灯逐灯写光源动机、方向、色温、软硬、范围、衰减、可达面与投影；不把全图染色当作打光。
 - 多图溶图指定唯一底图，并为每张供体图列 `transfer_only/do_not_transfer`；底图人物与几何优先。供体成为大面积新场景时转合成 skill。
+- 新增、溶图或特效后先过边缘、光影与成像检查：**仅检测到**无来源色溢/亮边时启用 `edge_halo_spill_fix`；仅新增实体或供体与底图光色不一致时启用 `subject_harmonize_plan`；仅新增/修补区的噪点、锐度或镜头痕迹不一致时启用 `capture_match_plan`。真实霓虹边光、特效辉光和透明材质边缘不得当作缺陷删除。
 
 ### 7. 文字与参考图
 
@@ -123,6 +128,7 @@ metadata:
 ```powershell
 python scripts/validate_preset.py <preset.json>
 python scripts/audit_skill.py
+python scripts/test_validator.py
 ```
 
 验证失败就修正后再交付。聊天内直接输出时也按相同规则自检，禁止省略号、注释、占位符或不存在的 `params.target`。

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "skill_mode": "large_composite",
+  "cases": [
+    {
+      "id": "volcano-temple-dragon-vfx",
+      "request": "把背景完全重构为火山神殿，有巨龙、雷火法阵和前景火星。",
+      "assertions": ["主结构与主光源VFX分配到stage1", "背景透明后效分配到stage2", "人物染光和前景火星进入final assembly", "composition_budget避免五层堆满"]
+    },
+    {
+      "id": "two-subjects-floating-space",
+      "request": "双人悬浮在宇宙遗迹，没有可见地面，保留两人相对遮挡。",
+      "assertions": ["subjects[]逐人记录", "subject_count与数组一致", "union_subject_alpha移除两人", "shadow_mode=none且有原因"]
+    },
+    {
+      "id": "capability-blocked",
+      "request": "执行器只能整图生成，不能输出透明层，也没有人物抠图。",
+      "assertions": ["execution_status为blocked_by_capability", "列出缺失能力", "不输出伪可执行两阶段预设", "不退回模型重绘人物"]
+    }
+  ]
+}

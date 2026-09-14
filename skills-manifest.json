@@ -1,8 +1,11 @@
 {
+  "schema_version": 1,
   "package": "cos-composite-prompt-skills",
+  "version": "2.0.0",
   "author": "Couiris",
   "license": "MIT",
-  "release_date": "2026-09-13",
+  "repository": "https://github.com/Couiris/cosplay-skill-Post-production-special-effects-and-compositing-skills-for-cosplay",
+  "release_date": "2026-09-14",
   "skills": [
     {
       "name": "cos-basic-vfx-prompt",

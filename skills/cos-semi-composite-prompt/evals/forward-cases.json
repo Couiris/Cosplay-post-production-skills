@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "skill_mode": "semi_composite",
+  "cases": [
+    {
+      "id": "retained-venue-local-ground",
+      "request": "锁定会场远墙、天花板和钢架，清掉路人，在人物脚下铺局部湿石地并加入低矮古风道具。",
+      "assertions": ["visible_retained_scene_lock 与 occluded_reconstruction_mask 分离", "ground scope 为局部", "道具不覆盖墙顶", "阶段1清场与扩图在阶段2冻结"]
+    },
+    {
+      "id": "cleanup-and-side-outpaint",
+      "request": "保留原场馆和人物，清摄影器材，向左右扩图增加安全留白。",
+      "assertions": ["原画框1:1", "original_to_final_translation_px 为整数平移", "人物/影子/锁区使用同一变换", "stage2 不再授权 outpaint_mask"]
+    },
+    {
+      "id": "foreground-and-vfx-relight",
+      "request": "保留场馆墙顶，加入人物前方花枝和背景法阵，法阵给衣服边缘少量染光。",
+      "assertions": ["人物源层RGBA零差异", "染光输出 subject_relight_overlay_rgba", "花枝输出 foreground_occluder_rgba", "最终装配顺序固定"]
+    }
+  ]
+}

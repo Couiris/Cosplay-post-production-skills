@@ -18,8 +18,8 @@
   "subject_lock_contract": {
     "subject_count": "输入照片中的真实人数，原样返回，不增不减",
     "identity_lock": "身份、脸型、五官、表情、妆面、瞳色、肤色基准不变",
-    "hair_lock": "发型、发色、发量、发丝轮廓与走向不变",
-    "outfit_lock": "服装版型、图案纹理、褶皱结构、配饰、武器与手持道具的形状颜色不变",
+    "hair_lock": "默认锁定发型、发色、发量、发丝轮廓与走向；只开放已启用头发模块明确列出的 allowed_delta",
+    "outfit_lock": "默认锁定服装、配饰、武器与手持道具；只开放已启用服装/道具/溶图模块明确列出的 allowed_delta",
     "pose_lock": "动作、姿态、肢体角度、手势、视线、人物间相对位置不变；不补肢、不换手、不制造重复人物",
     "transform_lock": {
       "xy_position": "不变",
@@ -30,11 +30,12 @@
       "frame_ratio": "占画面比例不变",
       "tolerance": 0
     },
-    "subject_core_readonly": true,
-    "subject_repaint_allowed": false,
+    "subject_core_readonly": "授权区外为 true；授权区内仍只允许 module_allowed_deltas",
+    "subject_repaint_allowed": "默认 false；仅对应人物模块的最小授权区为 true",
     "subject_transform_allowed": false,
     "subject_duplicate_allowed": false,
-    "relight_exception": "仅 vfx_relight_mask 内允许非破坏性同色染色与小幅亮度响应，不改身份、结构、纹理与原有明暗细节"
+    "module_allowed_deltas": "根据实际启用模块动态编译：修脸只开放皮肤/妆面，换装只开放指定服装区，暗光救片只开放技术影调与噪点，虚拟灯只开放逐灯可达面，VFX 只开放 vfx_zone 与 vfx_relight_mask",
+    "relight_exception": "仅 lighting_reshape 授权区、virtual_lighting_plan 逐灯 affected_surfaces、或 vfx_relight_mask 内允许模块所述光照变化；身份与几何仍锁定"
   }
 }
 ```
@@ -47,7 +48,7 @@
 
 ## 2. background_lock_contract（原背景锁定合同）
 
-提炼自合成技能的 `photographic_fidelity_contract`，但本技能不清理、不补洞、不扩图，只保护。
+提炼自合成技能的 `photographic_fidelity_contract`。本技能允许已启用模块在各自最小授权区内清理、补洞或有限扩边；除此之外背景保持只读。
 
 ```json
 {
@@ -55,13 +56,13 @@
     "source_basis": "original_photo_only",
     "composition_lock": "原背景的地平线、灭点、墙地顶结构、物件位置与前后遮挡不变",
     "material_lock": "背景材质、纹理方向、接缝、粗糙度、磨损、污渍、反射、颗粒保持原样，不替换成新材质",
-    "tone_color_lock": "原背景明度、色相、饱和度、白平衡、黑位白位、伽马、对比度、色调曲线、高光滚降不变",
-    "capture_lock": "原锐度、局部微对比、噪点、RGB颗粒、压缩质感、镜头畸变与边缘拉伸不变",
-    "no_global_grading": true,
+    "tone_color_lock": "默认锁定；仅 grading/background_tone/color_match/lighting/low_light 等已启用模块的 allowed_delta 可改变",
+    "capture_lock": "默认锁定；仅 capture_artifact/enhance/low_light/capture_match/output_finish 等已启用模块的 allowed_delta 可改变",
+    "no_global_grading": "默认 true；用户明确要求且启用 grading_plan/color_match/lighting_reshape 时按模块授权改为 false",
     "no_global_filter": "禁止全局柔光、全局雾、全局暗角、全局胶片颗粒、全局LUT式调色",
     "background_replace_allowed": false,
     "object_remove_allowed": false,
-    "edit_allowed_only_in": "authorized_change_mask（即全部 vfx_zone 并集）",
+    "edit_allowed_only_in": "authorization_contract.authorized_change_mask（全部已启用模块 authorized_area 的并集，不仅是 vfx_zone）",
     "outside_mask_validation": "显式蒙版或宿主合成时检查 RGBA 零差异；语义蒙版时检查可见一致并标 best_effort"
   }
 }
@@ -69,11 +70,13 @@
 
 要点：
 
+- 四份合同不是静态“什么都不许改”，而是先默认锁定，再把**本次实际启用模块**的 `authorized_area + allowed_delta` 编译成最小例外。未启用模块绝不能借用其他模块的授权。
+
 - 特效对背景唯一允许的改变是「特效本身的像素」以及特效发光在邻近表面**物理可达**的反射/染色（写进对应特效的 relight_and_blend），且随距离衰减、被遮挡即终止。
 - 不允许借加特效之名重新渲染背景（如「顺便把背景虚化/把墙换成城堡/把地面打湿一大片」）；这类需求转半合成/大合成技能。
 - 地面法阵、冰霜蔓延、积水、裂地等贴地效果只覆盖授权的局部地面，覆盖区内允许叠加特效层，但要透出原地面纹理走向、服从原地面透视，边缘自然衰减，不能是一块圆形贴片。
 
-## 3. geometry_camera_lock（几何与相机锁定合同）
+## 3. geometry_camera_lock_contract（几何与相机锁定合同）
 
 ```json
 {
@@ -108,9 +111,9 @@
     "primary_light": {"direction": "从眼神光/鼻影/下颌影交叉判断", "elevation": "low/mid/high", "softness": "hard/semi-soft/soft", "color": "冷暖与色偏视觉估计", "confidence": "high/medium/low"},
     "rim_or_fill_light": "发丝/肩线轮廓光与暗部填充，没有证据就留空",
     "existing_shadow": {"direction": "原投影反方向", "edge": "软硬", "note": "特效投影必须服从同一方向"},
-    "environment_emitters": "画面里真实可见的灯、窗、屏幕、霓虹、火焰（最高优先级证据）"
-  },
-  "light_match_strength": 90
+    "environment_emitters": "画面里真实可见的灯、窗、屏幕、霓虹、火焰（最高优先级证据）",
+    "light_match_strength": 90
+  }
 }
 ```
 
@@ -118,21 +121,22 @@
 
 ## 5. authorization_contract（全部模块授权书）
 
-每个特效一份，多个特效求并集：
+每个启用模块一份，模块授权区求并集；`vfx_plan` 内再按 effect 细分：
 
 ```json
 {
   "authorization_contract": {
-    "per_effect": {
-      "effect_id": "vfx_1",
-      "vfx_zone": "作用区域：脚下地面/掌心/武器沿线/身后/头顶/周身半径/前景空区/背景空区/全空气层",
-      "anchor": "锚点：脚点、掌心坐标、武器端点、肩胛、头顶等（相对人物，不可驱动人物变化）",
-      "depth_order": "behind_subject | around_subject | in_front_of_subject",
-      "occlusion": "与人物身体、头发、衣摆、武器、背景物件的前后遮挡关系",
-      "authorized_area": "该特效允许写入像素的区域描述（供局部重绘刷蒙版）"
+    "per_module": {
+      "vfx_plan": {
+        "authorized_area": "全部 effect.authorized_area 的并集",
+        "allowed_delta": "只增加指定特效及其 vfx_relight_mask 内的物理响应",
+        "edge_policy": "保留人物遮挡和真实轮廓光"
+      }
     },
-    "authorized_change_mask": "vfx_1.zone UNION vfx_2.zone ...",
+    "authorized_change_mask": "全部启用模块 authorized_area 的并集",
     "unchanged_region_mask": "NOT authorized_change_mask（人物核心区与未授权背景在此掩码内，只读）",
+    "mask_enforcement": "explicit_mask | semantic_mask | host_composite",
+    "lock_reliability": "strong | best_effort",
     "face_clean_zone": "人物面部识别区默认不进入任何 vfx_zone，粒子/光尘绕开，保持干净负空间"
   }
 }
@@ -149,12 +153,12 @@
 ```json
 {
   "execution_contract": {
-    "mode": "single_pass_edit_only",
+    "mode": "follow execution_strategy: single_pass | ordered_micro_passes | checkpointed_multi_turn",
     "base_image": "输入原照片作为唯一内容与几何基准",
     "global_generative_render": false,
     "full_frame_repaint_allowed": false,
     "transform_allowed": false,
-    "global_grading_allowed": false,
+    "global_grading_allowed": "默认 false；仅显式启用 grading_plan/color_match/lighting_reshape 时在其授权范围为 true",
     "mask_coordinates": "canvas_absolute",
     "render_rule": "只在 authorized_change_mask 内增量编辑；显式蒙版/宿主合成时 unchanged_region_mask 逐像素保留，语义蒙版时以可见一致为目标",
     "layering_order": "先背景侧特效 → 再环绕/附着特效 → 最后前穿越层；同层按 depth_order 合成",
@@ -189,7 +193,6 @@
 |---|---|---|
 | cleanup_plan 清背景 | 被移除对象的 mask，补洞像素延续相邻原材质/光影/透视 | 人物、未遮挡背景、整体色调 |
 | capture_artifact_fix 伪影 | 摩尔纹、色边、灰点、条带、压缩块等伪影区 | 真实纹理、真实灯光色散、构图色调 |
-| enhance_plan 清晰度 | 全图做去模糊/降噪/细节增强，但只增强已有细节 | 不得新增原图没有的内容、不得磨皮美颜、不得改构图色调 |
 | remove_overlay 去水印 | 水印/文字本身+1~2px | 其余全部；仅处理用户自有/有权图 |
 | wardrobe_malfunction_fix 去打底裤穿帮 | 仅服装轮廓线外露出的安全裤/衬裤边缘那一条 | **身体覆盖范围只增不减、禁生成裸露**；腿型、裙摆形态、其余服装背景 |
 | enhance_plan 清晰度 | 全图做去模糊/降噪/细节增强，但只增强已有细节 | 不得新增原图没有的内容、不得磨皮美颜、不得改构图色调 |
@@ -202,6 +205,7 @@
 | lens_geometry_fix 镜头几何 | 全图或背景几何变换区 | 人物身份、身体比例；裁切/扩边必须显式授权 |
 | low_light_rescue 暗光救片 | 全图技术修复 | 夜景时间感、真实颗粒、可见光源颜色与构图 |
 | highlight_shadow_recovery 高光阴影 | 指定高光/阴影区 | 全图曝光基准、完全剪切区不可虚构复杂细节 |
+| edge_halo_spill_fix 边缘去色溢 | 污染轮廓及内外极窄过渡带 | 真实轮廓光、发丝/薄纱/透明件覆盖、人物几何 |
 | face_retouch 修脸 | 皮肤瑕疵点、≤10% 轮廓微调区、妆容增强区、眼神光点 | 本人身份与五官相对位置、五官结构、肤色基准、背景 |
 | makeup_refine 妆面 | 眼线/睫毛/眉/腮红/唇妆等既有妆面区 | 五官结构、身份、皮肤真实纹理 |
 | body_sculpt 液化 | 身形轮廓小幅度推移区 | 关节解剖、左右对称、服装版型；**必须同步复原被推弯的背景直线** |
@@ -241,10 +245,12 @@
 | lens_fx_plan 镜头效果 | 由亮源决定的镜头光路或明确前景层 | 无光源区域、脸部识别区与主体清晰度 |
 | virtual_lighting_plan 虚拟打光 | 每盏灯的可达面、投影和反射区 | 无法被该光路照到的区域、身份与几何 |
 | depth_atmosphere_plan 空气透视 | 按深度划分的空气区 | 清晰主体、面部识别区与近景黑白点 |
+| capture_match_plan 成像匹配 | 新增/修补区或显式授权的全图轻量匹配 | 主焦点清晰度、几何与已通过的光影关系 |
 | poster_plan 海报 | 全图统一海报级影调 + 构图留白区（不改变人物姿态与位置） | 身份、五官、姿态坐标；默认不生成文字（乱码风险） |
 | frame_plan 边框 | 画框外侧新增边框区 | 框内原图 1:1 |
 | text_plan 文字 | 指定排版安全区 | 人物关键轮廓、未授权背景；文案逐字符锁定 |
 | stylize_plan 风格化 | 全图渲染介质（需用户显式要求） | 身份可辨识、姿态、构图、位置、服装款式 |
+| output_finish_plan 输出收尾 | 导出编码、尺寸与克制锐化 | 内容、构图、授权区、身份和原画框关系 |
 
 锁定例外原则：**例外只开放该模块明确需要的那一维度**。grading 开放「色调」不开放「几何」；stylize 开放「渲染介质」不开放「身份姿态」；outpaint 开放「画框外」不开放「画框内」。任何模块都不开放人物身份与姿态坐标。
 
@@ -271,7 +277,7 @@
 
 固定优先级，低优先级不得覆盖高优先级锁定：
 
-`subject_lock（身份/姿态/坐标） > geometry_camera_lock（画布/机位/透视） > background_lock（原背景） > outpaint 原画框内锁 > cleanup/technical_repair（清理与技术修复） > hand/hair/face/body（结构精修） > outfit/material_texture（服装与分材质质感） > image_blend/prop/vfx（溶图、增材与特效） > subject_harmonize（新增内容协调） > virtual_lighting（新增灯光） > blur/depth_atmosphere > grading/poster > frame/stylize`
+`subject_lock（身份/姿态/坐标，扣除显式 allowed_delta） > geometry_camera_lock（画布/机位/透视，扣除显式位移/扩图） > background_lock（原背景，扣除模块授权区） > outpaint 原画框内锁 > cleanup/technical_repair（清理与技术修复） > hand/hair/face/body（结构精修） > outfit/material_texture（服装与分材质质感） > image_blend/prop/vfx（溶图、增材与特效） > shadow/subject_harmonize/virtual_lighting（按实际需要） > conditional_edge_halo_spill（仅有污染时） > blur/depth_atmosphere > grading/poster > conditional_capture_match（仅不一致时） > frame/stylize > output_finish`
 
 举例：特效光不得重画人脸（vfx 低于 subject_lock）；调色不得把刚补好的背景补洞区单独偏色（grading 低于 background_lock，必须全图统一）；风格化不得改变姿态坐标（stylize 最低，但仍受 subject_lock 约束）。
 

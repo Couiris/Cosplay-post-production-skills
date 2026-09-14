@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -110,6 +111,24 @@ def main() -> int:
             except json.JSONDecodeError as exc:
                 errors.append(f"{json_file.relative_to(ROOT)}: JSON 无效（{exc}）")
 
+        for script_name in ("audit_skill.py", "test_validator.py"):
+            script_path = skill_root / "scripts" / script_name
+            if not script_path.is_file():
+                errors.append(f"{skill_name}: 缺少 scripts/{script_name}")
+                continue
+            result = subprocess.run(
+                [sys.executable, "-B", str(script_path)],
+                cwd=skill_root,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+            )
+            if result.returncode != 0:
+                detail = (result.stdout + result.stderr).strip()
+                errors.append(f"{skill_name}: {script_name} 失败\n{detail}")
+
     forbidden = [
         path.relative_to(ROOT)
         for path in ROOT.rglob("*")
@@ -124,7 +143,10 @@ def main() -> int:
             print(f"- {error}")
         return 1
 
-    file_count = sum(1 for path in ROOT.rglob("*") if path.is_file())
+    file_count = sum(
+        1 for path in ROOT.rglob("*")
+        if path.is_file() and ".git" not in path.relative_to(ROOT).parts
+    )
     print(f"校验通过：{len(EXPECTED)} 个 skills，{file_count} 个文件，结构、链接和 JSON 均有效")
     return 0
 

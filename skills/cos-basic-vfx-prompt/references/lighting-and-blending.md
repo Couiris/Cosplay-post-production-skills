@@ -74,7 +74,16 @@
     {
       "ref": "input_2",
       "transfer_only": ["指定内容"],
-      "do_not_transfer": ["供体图无关内容"]
+      "do_not_transfer": ["供体图无关内容"],
+      "source_region": "供体图中要提取的最小区域",
+      "target_region": "底图中的落点与最小写入区",
+      "anchor_map": "供体锚点 → 底图锚点",
+      "transform_or_warp": "缩放、旋转、透视/曲面 warp 与限制",
+      "method": "masked_normal | screen_lighten | multiply_dark | soft_light_texture | depth_aware_composite",
+      "strength": 55,
+      "transition_zone": "本供体蒙版边界与羽化",
+      "depth_and_occlusion": "本供体所在深度与遮挡者",
+      "contact_and_shadow": "接触、承托、投影或无需投影的物理理由"
     }
   ],
   "alignment": "按地平线/灭点/物体特征/人物锚点对齐",
@@ -86,6 +95,8 @@
   "seam_healing": "边缘、接缝、重影和色边处理"
 }
 ```
+
+单供体可以从 plan 级 `alignment/blend_method/opacity_or_strength/transition_zone/depth_and_occlusion` 继承默认值；**两个或以上供体必须把上面的定位、warp、混合、强度、过渡、深度和接触影字段写进每个 donor**。这样服装、道具和光效可以各自对齐、各自失败重试，不共用一套含糊参数。
 
 ### 混合方式选择
 
@@ -108,4 +119,3 @@
 - 无双边、鬼影、硬切蒙版、色温断层、锐度断层和重复纹理。
 - 透视、尺度、遮挡、接触影、景深、噪点与底图一致。
 - 每个供体失败时可单独关闭或只重试其蒙版，不影响其他供体。
-

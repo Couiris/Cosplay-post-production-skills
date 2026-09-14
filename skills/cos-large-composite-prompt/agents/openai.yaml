@@ -1,6 +1,6 @@
 interface:
   display_name: "COS大合成提示词"
-  short_description: "生成完全换景与华丽特效的两阶段COS合成预设"
-  default_prompt: "使用 $cos-large-composite-prompt 为这张 COS 照片生成完全换景、华丽特效的大合成预设。"
+  short_description: "完全换世界的可验证两阶段 COS 大合成"
+  default_prompt: "使用 $cos-large-composite-prompt：先检查人物抠图、显式蒙版、透明补丁、绝对坐标合成和差分能力，再生成 pair_id 一致、支持多人/悬空、包含世界重构、VFX 阶段分配、独立影子、无人无影底板、人物染光/前景装配层和五道质量门的两阶段 JSON 预设。"
 policy:
   allow_implicit_invocation: true

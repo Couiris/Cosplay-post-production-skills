@@ -33,7 +33,7 @@
 
 ### 输出目标
 
-输出与最终画布逐像素同尺寸的完整合成图。模型只生成 `background_plate_rgba` 和透明 `shadow_layer_rgba`；人物 alpha 内的人物由宿主从原始透明抠图逐像素回贴，禁止模型重绘人物。阶段 1 只在 alpha 外生成场景骨架与五层第一批基础素材，并依据实际光源在承载面上生成完整的接触影、环境遮蔽和投射影。阶段 1 必须稳定主要建筑、道路、承托、关键道具、植物、远景地标、透视、尺度、景深、灯位与基础材质；最终高密度辅助素材、英雄级材质细化和主要特效留给阶段 2。
+输出与最终画布逐像素同尺寸的完整合成图。模型只生成 `background_plate_rgba` 和透明 `shadow_layer_rgba`；人物 alpha 内的人物由宿主从原始透明抠图逐像素回贴，禁止模型重绘人物。阶段 1 只在 alpha 外生成场景骨架与五层第一批基础素材，并依据实际光源在承载面上生成接触影、环境遮蔽和投射影。阶段 1 必须稳定主要建筑、道路、承托、关键道具、植物、远景地标、透视、尺度、景深、灯位与基础材质；会改变天空、主结构或主光源的结构性特效也必须在阶段 1 完成。高密度辅助素材、英雄级材质细化和透明背景后效留给阶段 2。
 
 阶段 1 同时必须输出 `shadow_lock_package`：画布同尺寸的 `locked_shadow_mask`、锁区 `shadow_reference_pixels`、接触影/环境遮蔽/投射影三个分区、透明独立影子层及其画布坐标。还必须输出 `base_frame_manifest`：阶段 1 原图引用/哈希、尺寸、人物移除遮罩及阶段 2 各类授权修改遮罩。两者都是阶段 2 的强制输入；只有合成图而没有锁包和 manifest 时，阶段 1 不算完成。
 
@@ -41,6 +41,7 @@
 
 ```json
 {
+  "subject_count": 1,
   "task": "只生成背景板和独立影子层，由宿主按原始alpha绝对坐标回贴人物",
   "input_requirement": {
     "canvas_lock": "输出宽高与输入完全相同，不裁切、不扩图、不缩放",
@@ -48,7 +49,6 @@
   },
   "generation_mode": {
     "mode": "background_plate_plus_shadow_layer",
-    "subject_count": 1,
     "subject_rendering": "模型禁止输出人物像素；宿主只接受原始透明抠图",
     "preserve_subject": "由宿主按原始alpha、绝对坐标、尺寸、姿态和道具逐像素回贴",
     "shadow_generation": "按阶段1实际背景光源生成透明独立影子层，不含人物像素"
@@ -69,12 +69,15 @@
 }
 ```
 
+上例按单人物填写 `subject_count: 1`；实际预设必须改为检测到的整数人数，并与 `subject_lock_contract.subjects[]` 长度一致，不能填表达式或说明文字。
+
 阶段 1 还必须包含以下执行合同：
 
 ```json
 {
   "subject_lock_contract": {
-    "source": "original_transparent_subject_cutout",
+    "subjects": [{"subject_id": "subject_1", "source": "original_transparent_subject_cutout", "alpha": "runtime binding", "bbox": "runtime binding", "centroid": "runtime binding", "crown": "runtime binding", "contact_points": [], "width_height": "runtime binding", "rotation": "runtime binding", "pixel_hash": "runtime binding", "occlusion_order": 1}],
+    "union_subject_alpha": "OR of subjects[].alpha",
     "subject_transform_allowed": false,
     "subject_repaint_allowed": false,
     "subject_model_output_allowed": false,
@@ -84,7 +87,8 @@
   "stage1_execution_contract": {
     "pass_1a_background_plate": "模型只输出background_plate_rgba；人物区alpha=0或由宿主遮挡",
     "pass_1b_shadow_layer": "模型只输出shadow_layer_rgba；人物像素alpha=0，影子使用画布绝对坐标",
-    "pass_1c_deterministic_composite": "宿主从copy(background_plate_rgba)开始，先按原始alpha回贴人物，再按绝对坐标合成shadow_layer_rgba",
+    "pass_1c_deterministic_composite": "宿主从copy(background_plate_rgba)开始，先按绝对坐标合成shadow_layer_rgba，再按各自occlusion_order回贴原始人物",
+    "composite_order": ["background_plate_rgba", "shadow_layer_rgba", "original_subjects", "subject_relight_overlay_rgba", "foreground_occluder_rgba"],
     "reject_full_frame_subject": true,
     "reject_any_subject_transform": true,
     "validation": "回贴后人物bbox、质心、面积、脚点和RGBA与原始抠图逐通道零差异"
@@ -92,7 +96,7 @@
 }
 ```
 
-上例 `subject_count: 1` 仅表示单人输入；实际预设必须写入检测到的真实整数人数。
+实际预设必须写入检测到的真实整数人数，并与 `subject_lock_contract.subjects[]` 数量一致。多人物逐人记录 alpha/hash/承重点/遮挡顺序；阶段 2 使用 `union_subject_alpha` 移除全部人物。
 
 ### 构图规则
 
@@ -114,9 +118,9 @@
 
 ### 预设命名
 
-- `id`: `f_<category>_<slug>-step1-subject-shadow-composite`
+- `id`: `f_scene_<slug>-step1-subject-shadow-composite`
 - `title`: `阶段1-<主题>保留人物场景影子合成`
-- `category`: 通常为 `background` 或 `scene`
+- `category`: `scene`
 
 ## 阶段 2：硬锁影子、去人补景、增补素材、细化材质与添加特效
 
@@ -133,7 +137,7 @@
 
 - `subject_removal_mask`：以原始 alpha 为核心，只在消除发丝污染所需的窄带内扩展；不得包含接触影和投射影。
 - `shadow_removal_mask`：直接读取阶段 1 的 `locked_shadow_mask`，作为允许清除阶段 1 影子的区域；不得重新语义识别或移动该区域。
-- 遮罩公式固定为 `subject_removal_mask = cleaned_subject_alpha`、`shadow_removal_mask = locked_shadow_mask`；2A 补景遮罩为两者联合，素材/材质/特效遮罩必须排除两者。
+- 遮罩公式固定为 `subject_removal_mask = cleaned_subject_alpha`、`shadow_removal_mask = locked_shadow_mask`；2A 补景遮罩为两者联合。素材/材质/特效遮罩默认排除两者；只有 2A 已验收且背景连续延伸确有必要时，才允许用独立显式 mask 与该联合区相交，并额外验证不存在人形负空间。
 - 输出必须是“补全后的无人无影背景 + 第二批新增素材 + 全部素材最终材质精修 + 背景空间特效”，`subject_count: 0`。禁止人物本体、边缘、倒影、残影、人形负空间或阶段 1 影子残留。
 
 阶段 2 原样复用阶段 1 的 `subject_light_profile`、`environment_light_plan` 和 `light_match_strength`。它从阶段 1 读取人物 alpha 与影子差分区域：人物 alpha 和影子差分都是待移除区。阶段 2 不重新设计或保留影子；若需要影子，用户后期从阶段 1 独立影子层擦回。
@@ -169,6 +173,7 @@
     "pass_2a_subject_fill": "只生成subject_fill_patch_rgba，(subject_removal_mask OR shadow_removal_mask)外alpha=0",
     "pass_2b_overlays": "分别生成asset/refinement/vfx透明RGBA层，各层在对应允许遮罩外alpha=0",
     "pass_2c_deterministic_composite": "宿主从copy(stage1_output)开始，仅按遮罩合成补丁和叠加层，不回写影子锁区",
+    "composite_order": ["background_plate_rgba", "shadow_layer_rgba", "original_subjects", "subject_relight_overlay_rgba", "foreground_occluder_rgba"],
     "authorized_change_mask": "subject_removal_mask OR shadow_removal_mask OR asset_addition_mask OR material_refinement_mask OR background_vfx_mask",
     "unchanged_region_mask": "NOT authorized_change_mask",
     "reject_full_frame_model_output": true
@@ -184,14 +189,23 @@
     "locked": "不替换、不移动、不缩放阶段1主资产，不改变相机、灭点、地面、灯位、景深和影子",
     "integration": "每件新增素材具有世界观依据、真实尺度、落点、遮挡、材质、景深、受光和投影"
   },
+  "stage2_overlay_layers": {
+    "ground": {"richness": 35, "detail_precision": 70},
+    "foreground": {"richness": 25, "detail_precision": 70},
+    "midground": {"richness": 40, "detail_precision": 70},
+    "background": {"richness": 25, "detail_precision": 65},
+    "airborne": {"richness": 35, "detail_precision": 65}
+  },
   "background_vfx": {
     "background_vfx_intensity": 55,
     "background_particle_density": 50,
     "placement": "只在人物后方、承载面或人物alpha之外增加有深度、遮挡和光影反馈的特效",
     "forbidden": "不进入人物alpha，不贴着alpha边缘排列，不形成人形负空间"
   },
-  "deferred_foreground_vfx": {
-    "policy": "需要压在最终人物前方的特效不烘焙进本阶段，记录后留待单独合成"
+  "final_assembly_manifest": {
+    "subject_relight_overlay_rgba": "可选；仅人物alpha内物理可达光色，alpha/结构/纹理不变",
+    "foreground_occluder_rgba": "可选；只含压在最终人物前方的实体或VFX，其他区域alpha=0",
+    "layer_order": ["background_plate_rgba", "shadow_layer_rgba", "original_subjects", "subject_relight_overlay_rgba", "foreground_occluder_rgba"]
   }
 }
 ```
@@ -211,19 +225,19 @@
 ### 阶段 2 固定执行顺序
 
 1. 校验阶段 1 原图哈希、画布尺寸、绝对坐标 masks 与影子锁包；不匹配则停止。
-2. 2A 仅在 `subject_removal_mask` 内生成补洞 patch；遮罩外 alpha=0。
-3. 2B 仅在显式 `asset_addition_mask`、`material_refinement_mask`、`background_vfx_mask` 内生成透明叠加层；不得返回新的整张底图。
+2. 2A 仅在 `subject_removal_mask OR shadow_removal_mask` 内生成补洞 patch；联合遮罩外 alpha=0。
+3. 2B 仅在显式 `asset_addition_mask`、`material_refinement_mask`、`background_vfx_mask` 内生成透明叠加层，并按需输出 relight/foreground 最终装配层；不得返回新的整张底图。
 4. 2C 宿主执行 `output = copy(stage1_output)`，按遮罩依次合成补洞、素材、材质和特效层，不做任何几何变换。
 5. 不回写 `shadow_reference_pixels`，不覆盖独立影子层；该层交给用户后期处理。
 6. 校验 `subject_removal_mask OR shadow_removal_mask` 内无人无影，且 `unchanged_region_mask` 的 RGBA 差分为 0；否则丢弃阶段 2 输出。
 
 ### 背景材质精修与特效
 
-- 阶段 1 只负责场景骨架和第一批基础素材。它必须让所有主要结构与光影关系成立，但不承担最终素材密度和华丽特效。
-- 阶段 2 必须先执行 `stage2_asset_expansion`：在空区增加第二批辅助道具、植物、结构附件和空间层次素材。新增素材不得进入人物 alpha、识别净区或 `locked_shadow_mask`，不得移动、替换或缩放阶段 1 主资产。
+- 阶段 1 负责场景骨架、第一批基础素材及结构性特效。`vfx_stage_assignment` 将改变天空、建筑轮廓、主光源或主承载面的特效放阶段 1；阶段 2 只承担背景侧透明后效；人物局部受光与前压人物的特效进入最终装配层。
+- 阶段 2 必须先执行 `stage2_asset_expansion`：在空区增加第二批辅助道具、植物、结构附件和空间层次素材。默认避开人物/影子移除区；2A 补洞验收后，背景侧纹理或 VFX 可用独立显式 mask 在该区连续延伸，以避免人形负空间，但不得沿人物轮廓排布。任何新增均不得移动、替换或缩放阶段 1 主资产。
 - 阶段 2 随后执行 `background_refinement`：对阶段 1 与阶段 2 的全部素材精修缝隙、粗糙度、微表面、制造痕迹、磨损、潮湿、反射、透射、颗粒与局部色阶；不得改变已定型几何、坐标、灯位或景深。
 - 阶段 2 必须包含 `background_vfx`：根据用户主题在背景侧增加雾、烟、尘、花瓣、火星、雨雪、光尘或体积光中的适配元素，并与阶段 1 光源和介质互动。特效只能位于人物后方、承载面或人物 alpha 之外；不得在 alpha 内补纹理，也不得贴着 alpha 边缘排列成轮廓。
-- 需要压在最终人物前方的花瓣、烟雾或能量不烘焙进阶段 2；将其记入 `deferred_foreground_vfx`，供最终覆盖人物后单独生成或合成。
+- 需要压在最终人物前方的花瓣、烟雾、实体或能量输出为 `foreground_occluder_rgba`；需要让场景/VFX 克制影响人物光色时输出 `subject_relight_overlay_rgba`。二者写入 `final_assembly_manifest`，固定层序为 `background plate → optional shadow → original subjects → subject relight → foreground occluder`，不修改人物源层。
 - 新特效需通过深度拆分、遮挡、边缘衰减、景深、运动模糊、颗粒、接触/介质反应、投影/反射检查；禁止贴图感。
 
 ### 素材丰富程度定义
@@ -265,8 +279,8 @@
 
 ### 预设命名
 
-- `id`: `f_<category>_<slug>-step2-subject-removed-refined-plate`
-- `title`: `阶段2-<主题>去人留影精修特效板`
+- `id`: `f_scene_<slug>-step2-subject-removed-refined-plate`
+- `title`: `阶段2-<主题>无人无影精修底板`
 - `category`: `scene`
 
 ## 交付与校验

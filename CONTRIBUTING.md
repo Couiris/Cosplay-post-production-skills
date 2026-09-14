@@ -17,7 +17,7 @@
 4. 新增 reference 后，必须从 `SKILL.md` 或另一份相关文档链接并说明读取时机。
 5. 不提交缓存、生成结果、私人图片、访问令牌或第三方未授权素材。
 6. 在仓库根目录运行 `python scripts/validate_skills.py`。
-7. 如修改基础后期的模块、特效或模板，再运行其 `scripts/audit_skill.py` 与相关预设校验。
+7. 修改任一 skill 时，运行该目录的 `scripts/audit_skill.py` 与 `scripts/test_validator.py`；生成示例预设时再运行对应 preset/pair 校验器。
 8. 提交 Pull Request，说明变更范围、理由、验证结果和兼容性影响。
 
 ## 内容要求

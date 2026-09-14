@@ -2,6 +2,8 @@
 
 一组面向 COS 场照与正片后期的 Codex skills，用于生成可导入 Nano Banana / Gemini 图像编辑插件的结构化 JSON 预设。
 
+Post-production, VFX, relighting, multi-image blending, and staged compositing prompt skills for cosplay photography.
+
 维护者：**Couiris**
 
 ## 如何选择
@@ -25,7 +27,7 @@ scripts/
 └── validate_skills.py
 ```
 
-每个 skill 都是独立目录，包含入口 `SKILL.md`、界面元数据 `agents/openai.yaml` 以及按需加载的 `references/`；基础后期 skill 还包含预设校验脚本。
+每个 skill 都是独立目录，包含入口 `SKILL.md`、界面元数据 `agents/openai.yaml`、按需加载的 `references/`、回归场景 `evals/` 与无第三方依赖的 `scripts/` 校验工具。
 
 ## 安装
 
@@ -47,15 +49,20 @@ Copy-Item -LiteralPath '.\skills\cos-large-composite-prompt' -Destination "$env:
 python scripts/validate_skills.py
 ```
 
-基础后期中的预设还可单独校验：
+根校验器会检查仓库结构、Markdown 链接、JSON、三个 skill 的审计与回归测试。生成具体预设后还可单独校验：
 
 ```powershell
 python skills/cos-basic-vfx-prompt/scripts/validate_preset.py <preset.json>
+python skills/cos-semi-composite-prompt/scripts/validate_pair.py <step1.json> <step2.json>
+python skills/cos-large-composite-prompt/scripts/validate_pair.py <step1.json> <step2.json>
 ```
+
+每次 push 与 pull request 也会通过 GitHub Actions 自动执行根校验器。
 
 ## 使用边界
 
 - 生成式编辑对人物、姿态和背景的“锁定”取决于执行器是否支持蒙版、透明图层和确定性回贴；仅靠自然语言提示时属于 best effort。
+- 半合成和大合成只有在人物抠图、显式 mask、透明 RGBA 补丁/图层、绝对坐标合成和像素差分能力可用时才标记为可执行。
 - 参考图只应迁移用户明确指定的内容，不应带入无关人物、水印、签名、品牌或独特构图。
 - 去水印功能只用于用户自有或已获授权的图片。
 - 涉及人物服装覆盖修复时，不减少身体覆盖，不生成裸露内容。

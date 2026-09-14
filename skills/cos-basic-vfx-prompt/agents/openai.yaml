@@ -1,6 +1,6 @@
 interface:
   display_name: "COS基础后期特效"
-  short_description: "COS 特效、质感、虚拟打光与溶图 JSON 预设"
-  default_prompt: "使用 $cos-basic-vfx-prompt 分析这张 COS 照片，并生成一份保留人物与原场景、包含质感增强、可控打光/溶图、授权区域和验收规则的后期 JSON 预设。"
+  short_description: "COS 局部后期、VFX、打光溶图与可验证质检"
+  default_prompt: "使用 $cos-basic-vfx-prompt 分析这张 COS 照片：先整理用户意图与禁改项，再选择最少必要模块，生成保留人物和大部分原场景、包含可控特效/质感/打光/溶图、逐模块授权区、执行策略与五道质量门的单预设 JSON。"
 policy:
   allow_implicit_invocation: true

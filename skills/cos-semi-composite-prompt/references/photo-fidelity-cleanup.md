@@ -12,6 +12,7 @@
 - `lighting_lock`：主光、填充、轮廓光、灯具亮度、阴影方向/长度/软硬/密度、反射和环境遮蔽与原图一致；禁止重新打光人物或保留背景。
 - `tone_color_lock`：保留区的明度、色相、饱和度、白平衡、黑位、白位、伽马值、对比度、色调曲线、高光滚降和暗部抬升逐项不变。
 - `capture_lock`：保留原锐度、局部微对比、噪点、RGB 颗粒、压缩、色深、镜头畸变和边缘拉伸。
+- `visible_retained_scene_lock`：只锁输入中真实可见的墙、顶、钢架和其他保留像素；人物、影子、路人或器材背后的未知区域进入 `occluded_reconstruction_mask`，允许依据邻近几何与材质补全。两 mask 必须互斥，不能用“永久锁墙面”阻止必要补洞。
 - `seamless_integration`：修补与新增区必须在透视、尺度、遮挡、边缘、接触影、反射、景深和颗粒上无缝衔接；禁止白边、硬抠、重复纹理、模糊补丁、色块和亮度跳变。
 - `retained_pixel_validation`：原画框中所有非授权像素与输入 RGBA 差分为 0；只允许 cleanup、subject/shadow removal、scene addition、material refinement、vfx 和扩图 mask 改变。
 
@@ -33,6 +34,7 @@
 
 - 默认 `mode: original_canvas`，不扩图。只有用户明确要求，或现有安全留白不足以放置所需场景而继续生成会侵入人物/保留区时，才使用 `mode: expand_if_needed`。
 - 扩图只增加原画框以外的像素。把原始输入作为未经重采样的 1:1 `original_frame_rect` 复制到最终画布；禁止裁切、缩放、旋转、透视变换、移动原画框内部元素或重新构图。
+- 记录 `original_to_final_translation_px=[left_expansion_px, top_expansion_px]`；原图、人物 alpha、影子和所有锁区应用同一个整数像素平移，不重新归一化或插值。
 - `canvas_expansion_contract` 必须记录原始宽高、最终宽高、left/top/right/bottom 扩展像素、原画框在最终画布中的整数坐标和两阶段共用的最终画布哈希。阶段 1 与阶段 2 逐字段一致。
 - 扩图区沿原墙、地面、顶棚、梁架、光线和景深向外连续延展：线条必须汇向原灭点，材质、明度、色相、饱和度、伽马、对比度、黑白位、颗粒和压缩匹配原图边缘。不得借扩图替换原背景或生成新的相机视点。
 - 扩图只在 `outpaint_mask = final_canvas MINUS original_frame_rect` 内生成；原画框内部除其他已授权 mask 外 RGBA 差分必须为 0。若无需扩图，四边扩展量固定为 0。

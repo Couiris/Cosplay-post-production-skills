@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {
+      "id": "dual-vfx-fire-circle-lightning",
+      "request": "保留人物和场景，脚下加火焰法阵，武器缠绕雷电，两者都要醒目但不要糊脸。",
+      "expected_modules": ["vfx_plan"],
+      "conditional_modules": ["capture_match_plan"],
+      "forbidden_auto_modules": ["virtual_lighting_plan", "edge_halo_spill_fix", "grading_plan"],
+      "strategy": ["ordered_micro_passes", "checkpointed_multi_turn"],
+      "assertions": [
+        "允许用户明确要求的双主效果，并提供 co_dominant_reason",
+        "火焰和雷电拥有各自 dynamics，不强迫同一运动方向或颜色",
+        "每个自发光效果都有独立 vfx_relight_mask",
+        "面部、手势和人物识别轮廓保持干净"
+      ]
+    },
+    {
+      "id": "two-donors-neon-rim",
+      "request": "以第一张为底图，从第二张只取武器，从第三张只取服装局部，再加右后方青色霓虹轮廓灯。",
+      "expected_modules": ["image_blend_plan", "virtual_lighting_plan"],
+      "conditional_modules": ["edge_halo_spill_fix", "subject_harmonize_plan", "capture_match_plan"],
+      "forbidden_auto_modules": ["vfx_plan", "lighting_reshape", "stylize_plan"],
+      "strategy": ["ordered_micro_passes", "checkpointed_multi_turn"],
+      "assertions": [
+        "multi_reference_support 必须确认 supported",
+        "两个 donor 分别拥有 source/target/warp/method/strength/depth/contact 字段",
+        "服装供体不得改变人物身份、姿态和未授权服装区",
+        "霓虹灯只影响可达轮廓面且不制造第二鼻影"
+      ]
+    },
+    {
+      "id": "low-light-material-texture-no-vfx",
+      "request": "暗光场照去彩噪，假发、丝绸和金属道具更有质感，不加任何特效，也不要修脸。",
+      "expected_modules": ["low_light_rescue", "material_texture_enhance_plan"],
+      "conditional_modules": ["capture_artifact_fix"],
+      "forbidden_auto_modules": ["vfx_plan", "face_retouch", "hair_fix", "enhance_plan"],
+      "strategy": ["ordered_micro_passes", "checkpointed_multi_turn"],
+      "assertions": [
+        "low_light_rescue 先执行且声明 recoverability",
+        "materials 分别记录证据、置信度、真实细节尺度和禁止虚构项",
+        "不重复降噪，不把假发质感误路由到 hair_fix",
+        "纯黑和严重运动模糊区不生成伪纹理"
+      ]
+    }
+  ]
+}

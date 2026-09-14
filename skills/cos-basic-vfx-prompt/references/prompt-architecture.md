@@ -8,20 +8,21 @@
 
 1. `role_instruction`
 2. `task_summary`
-3. `photo_readout`
-4. `executor_profile`
-5. `execution_strategy`
-6. `priority_order`
-7. 三份锁定合同与 `subject_light_profile`
-8. `reference_roles`（有参考图时）
-9. `pass_plan`（仅复杂请求）
-10. 启用模块
-11. `authorization_contract`
-12. `integration`
-13. `acceptance_tests`
-14. `retry_policy`
-15. `constraints`
-16. `negative_prompt`
+3. `intent_card`（用户要求、保留项、禁改项、参考图职责、交付物和不确定项）
+4. `photo_readout`
+5. `executor_profile`
+6. `execution_strategy`
+7. `priority_order`
+8. 三份锁定合同与 `subject_light_profile`
+9. `reference_roles`（有参考图时）
+10. `pass_plan`（仅复杂请求）
+11. 启用模块
+12. `authorization_contract`
+13. `integration`
+14. `acceptance_tests`
+15. `retry_policy`
+16. `constraints`
+17. `negative_prompt`
 
 锁定合同只出现一次；模块用 `preserve` 引用与本改动最相关的部分，不复制整段合同。
 
@@ -75,16 +76,19 @@
 
 - `single_pass`：总风险分 ≤6、没有互相开放同一锁定维度的冲突模块。
 - `ordered_micro_passes`：总风险分 >6，或同时涉及结构修复、多个自发光效果、全局成片、精确文字等。
+- `checkpointed_multi_turn`：执行器明确支持连续编辑，且复杂任务需要每轮验收后再继续；每步写检查点、继续条件和失败回滚点。
 
 推荐步骤：
 
 1. `repair_pass`：清理、补洞、伪影、手脚/假发/服装结构。
 2. `subject_finish_pass`：修脸、塑形、肤质、妆面、丝袜与服装质感。
-3. `blend_addition_pass`：多图溶图、实体增材、角色特征、影子和特效。
-4. `harmonize_lighting_pass`：协调新增内容，再执行虚拟打光；逐灯重建受光和投影。
-5. `global_finish_pass`：虚化、空气透视、调色、镜头效果、海报/边框/文字。
+3. `blend_addition_pass`：多图溶图、实体增材、角色特征、影子和特效；每个供体独立定位和 warp。
+4. `harmonize_lighting_pass`：仅在新增内容光色不一致时协调，再执行虚拟打光；逐灯重建受光和投影。检测到无来源白边/色溢时才插入边缘修复，不删除真实轮廓光或 VFX 辉光。
+5. `global_finish_pass`：虚化、空气透视、调色、镜头效果、海报/边框/文字；成像不一致才启用 `capture_match_plan`，交付锐化最后执行。
 
 只列实际需要的步骤。每步写 `input_basis: previous_pass_output`、本步模块、授权区、保持区和验收。某一步失败只重做该步与该区，不重跑所有操作。
+
+暗光救片默认由 `low_light_rescue` 吸收降噪；只有明确超分、普通失焦或运动模糊时再叠加 `enhance_plan`。`hair_fix` 只处理结构，单纯提升假发材质走 `material_texture_enhance_plan`。已有光影重排用 `lighting_reshape`，新增可定位灯源用 `virtual_lighting_plan`，特效自发光只在 effect 的 `vfx_relight_mask` 内传播。
 
 ## 6. 参考图职责
 

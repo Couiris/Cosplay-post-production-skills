@@ -121,3 +121,33 @@ Adobe 的自动溶图通过图层蒙版平滑组合不同曝光、照明或焦�
 来源：https://ai.google.dev/gemini-api/docs/image-generation
 
 Gemini 官方提供多图组合和关键细节保持的提示模板，强调明确指出从每张图取什么以及新增内容如何匹配环境光影。落实为 `base_image/donor_images/transfer_only/do_not_transfer` 与 `reference_roles`，并加入供体泄漏验收。
+
+## 2026-09-14 第三轮：可执行性与回归质量
+
+### Gemini 多轮编辑与具体指令
+
+来源：https://ai.google.dev/gemini-api/docs/image-generation
+
+官方当前文档建议在迭代图像任务中使用多轮对话，并明确描述需要保留的内容、每张输入图的职责、修改步骤和期望终态。落实为：
+
+- 新增 `checkpointed_multi_turn`，只在执行器明确支持连续编辑时启用；每一轮必须通过局部验收再继续。
+- 生成前编译 `intent_card`，把用户要求、显式保留、禁止改动、参考图职责和交付物放到单一事实源。
+- 多供体溶图把定位、warp、混合、遮挡和接触影下沉到每个 donor，避免不同供体共用一套含糊参数。
+- 多特效共享叙事瞬间和环境因果，但各自保留真实运动方向与颜色；不再强迫火焰和雷电使用同一风场或色值。
+
+### OpenAI 模型与 Skills 指令质量
+
+来源：https://developers.openai.com/api/docs/guides/latest-model
+
+官方模型指南强调，高质量工作流需要清楚的指令层级、具体约束与可验证输出；含糊或互相冲突的 skill 指令会降低执行稳定性。落实为：
+
+- 明确“用户本轮显式要求、保留项与交付格式”优先于 skill 默认值；默认规则只补空白。
+- 静态锁定合同改为“默认锁定 + 按启用模块动态 allowed delta”，解决换装、打光、暗光修复与全锁死的冲突。
+- 新增五道质量门和回归测试，验证授权覆盖、pass 顺序、供体追溯、特效密度、滑块范围与锁定可靠性。
+- 不在 skill 中写死当前模型型号、输入上限或价格；这些信息易变，使用时再查官方资料。
+
+### Adobe 合成边缘与成像一致性
+
+来源：https://helpx.adobe.com/photoshop/desktop/generative-ai/generative-ai-features-overview.html
+
+Adobe 把生成式添加/移除、主体协调与其他合成修复作为可分离能力。落实为条件式后处理：只有检测到无来源白边、绿边、双边或供体色溢时才用 `edge_halo_spill_fix`；只有新增内容的光色影或噪点锐度不一致时才启用协调/成像匹配，不把真实霓虹边光、透明材质边缘或 VFX glow 当作缺陷删除。
